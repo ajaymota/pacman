@@ -46,13 +46,6 @@
   <script>
     var el = document.getElementById("pacman");
 
-    var socket = io.connect('http://' + document.domain + ':' + location.port + '/test');
-    socket.on('server msg', function(msg) {
-        console.log('Received: ' + msg.data);
-    });
-
-    socket.emit('client msg', {data: 'Client to Server!'});
-
     if (Modernizr.canvas && Modernizr.localstorage &&
         Modernizr.audio && (Modernizr.audio.ogg || Modernizr.audio.mp3)) {
       window.setTimeout(function () { PACMAN.init(el, "./"); }, 0);

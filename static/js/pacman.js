@@ -21,6 +21,11 @@ var NONE        = 4,
     DYING       = 10,
     Pacman      = {};
 
+var socket = io.connect('http://' + document.domain + ':' + location.port + '/test');
+socket.on('server msg', function(msg) {
+    console.log('Received: ' + msg.data);
+});
+
 Pacman.FPS = 30;
 
 Pacman.Ghost = function (game, map, colour) {
@@ -950,7 +955,13 @@ var PACMAN = (function () {
                     timerStart = tick;
                 }
             }
-        }                             
+        }
+
+        console.log(getGhostsDis(userPos, ghostPos));
+        socket.emit('client msg', {data: getGhostsDis(userPos, ghostPos)});
+
+        console.log(getGhostsDir(userPos, ghostPos));
+        console.log([userPos.x, userPos.y]);
     };
 
     function mainLoop() {
@@ -1089,7 +1100,45 @@ var PACMAN = (function () {
         timer = window.setInterval(mainLoop, 1000 / Pacman.FPS);
     };
 
-    function getGhostPosX(user, ghosts) {
+    function getGhostsDis(user, ghosts) {
+        x = [0, 0, 0, 0];
+        for (i = 0, len = ghosts.length; i < len; i += 1) {
+            x[i] = (Math.sqrt(Math.pow(ghosts[i]["new"].x - user.x, 2) + Math.pow(ghosts[i]["new"].y - user.y, 2)));
+        }
+        return x;
+    };
+
+    function getGhostsDir(user, ghosts) {
+        // TOP = 0.0;
+        // RIGHT = 0.33;
+        // BOTTOM = 0.67;
+        // LEFT = 1.0;
+        x = [0, 0, 0, 0];
+        for (i = 0, len = ghosts.length; i < len; i += 1) {
+            if(Math.abs(ghosts[i]["new"].x - user.x) >= Math.abs(ghosts[i]["new"].y - user.y))
+            {
+                if(ghosts[i]["new"].x - user.x >= 0)
+                {
+                    x[i] = 0.33;
+                }
+                else
+                {
+                    x[i] = 1.0;
+                }
+            }
+            else if(Math.abs(ghosts[i]["new"].x - user.x) <= Math.abs(ghosts[i]["new"].y - user.y))
+            {
+                if(ghosts[i]["new"].y - user.y < 0)
+                {
+                    x[i] = 0.0;
+                }
+                else
+                {
+                    x[i] = 0.67;
+                }
+            }
+        }
+        return x;
     };
 
     return {
