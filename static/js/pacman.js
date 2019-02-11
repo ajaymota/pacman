@@ -22,7 +22,7 @@ var NONE        = 4,
     Pacman      = {};
 
 var socket = io.connect('http://' + document.domain + ':' + location.port + '/test');
-socket.on('server msg', function(msg) {
+socket.on('connect msg', function(msg) {
     console.log('Received: ' + msg.data);
 });
 
@@ -957,10 +957,29 @@ var PACMAN = (function () {
             }
         }
 
-        socket.emit('getGhostsDis', {data: getGhostsDis(userPos, ghostPos)});
-        socket.emit('getGhostsDir', {data: getGhostsDir(userPos, ghostPos)});
-        socket.emit('getNearestBiscuit', {data: getNearestBiscuit(userPos)});
-        socket.emit('getGhostsStatus', {data: getGhostsStatus(ghosts)});
+        socket.emit('client msg', {data: [getGhostsDis(userPos, ghostPos),
+                                          getGhostsDir(userPos, ghostPos),
+                                          getGhostsStatus(ghosts),
+                                          getNearestBiscuit(userPos),
+                                          getNearestWall(userPos),
+                                          [userPos.x/170, userPos.y/200] ]});
+
+        result = 0;
+        socket.on('server msg', function(msg) {
+            result = msg.data;
+        });
+        if(result == 0) {
+            keyDown(new KeyboardEvent('keypress',{'keyCode':38}));
+        }
+        else if(result == 0.33) {
+            keyDown(new KeyboardEvent('keypress',{'keyCode':39}));
+        }
+        else if(result == 0.67) {
+            keyDown(new KeyboardEvent('keypress',{'keyCode':40}));
+        }
+        else if(result == 1) {
+            keyDown(new KeyboardEvent('keypress',{'keyCode':37}));
+        }
     };
 
     function mainLoop() {
@@ -1094,15 +1113,17 @@ var PACMAN = (function () {
         dialog("Press N to Start");
         
         document.addEventListener("keydown", keyDown, true);
-        document.addEventListener("keypress", keyPress, true); 
-        
-        timer = window.setInterval(mainLoop, 1000 / Pacman.FPS);
+        document.addEventListener("keypress", keyPress, true);
+
+        timer = window.setInterval(function () {
+                                        mainLoop();
+                                    }, 1000 / Pacman.FPS);
     };
 
     function getGhostsStatus(ghosts) {
         x = [0, 0, 0, 0];
         for (i = 0, len = ghosts.length; i < len; i += 1) {
-            if(ghosts[i].isVunerable) {
+            if(ghosts[i].isVunerable()) {
                 x[i] = 1;
             }
         }
@@ -1113,6 +1134,7 @@ var PACMAN = (function () {
         x = [0, 0, 0, 0];
         for (i = 0, len = ghosts.length; i < len; i += 1) {
             x[i] = (Math.sqrt(Math.pow(ghosts[i]["new"].x - user.x, 2) + Math.pow(ghosts[i]["new"].y - user.y, 2)));
+            x[i] = x[i]/250;
         }
         return x;
     };
@@ -1150,7 +1172,7 @@ var PACMAN = (function () {
         return x;
     };
 
-    function getNearestBiscuit(user) {
+    function getNearestWall(user) {
         // UP = x[0];
         // RIGHT = x[1];
         // DOWN = x[2];
@@ -1233,6 +1255,99 @@ var PACMAN = (function () {
         while(nextWhole.x > 0) {
             block = map.block(nextWhole);
             if(block == Pacman.BISCUIT) {
+                x[3] = Math.abs((user.x/10) - nextWhole.x) / max_x;
+                break;
+            }
+            temp = getNewCoord(LEFT, temp);
+            nextWhole = next(temp, LEFT);
+        }
+
+        return x;
+    };
+
+    function getNearestBiscuit(user) {
+        // UP = x[0];
+        // RIGHT = x[1];
+        // DOWN = x[2];
+        // LEFT = x[3];
+        x = [1, 1, 1, 1];
+        max_x = 17;
+        max_y = 20;
+
+        function getNewCoord(dir, current) {
+            return {
+                "x": current.x + (dir === LEFT && -2 || dir === RIGHT && 2 || 0),
+                "y": current.y + (dir === DOWN && 2 || dir === UP    && -2 || 0)
+            };
+        };
+
+        function pointToCoord(x) {
+            return Math.round(x/10);
+        };
+
+        function nextSquare(x, dir) {
+            var rem = x % 10;
+            if (rem === 0) {
+                return x;
+            } else if (dir === RIGHT || dir === DOWN) {
+                return x + (10 - rem);
+            } else {
+                return x - rem;
+            }
+        };
+
+        function next(pos, dir) {
+            return {
+                "y" : pointToCoord(nextSquare(pos.y, dir)),
+                "x" : pointToCoord(nextSquare(pos.x, dir)),
+            };
+        };
+
+        // UP
+        temp = user;
+        nextWhole = next(temp, UP);
+        while(nextWhole.y > 0) {
+            block = map.block(nextWhole);
+            if(block == Pacman.WALL) {
+                x[0] = Math.abs((user.y/10) - nextWhole.y) / max_y;
+                break;
+            }
+            temp = getNewCoord(UP, temp);
+            nextWhole = next(temp, UP);
+        }
+
+        // RIGHT
+        temp = user;
+        nextWhole = next(temp, RIGHT);
+        while(nextWhole.x <= 17) {
+            block = map.block(nextWhole);
+            if(block == Pacman.WALL) {
+                x[1] = Math.abs((user.x/10) - nextWhole.x) / max_x;
+                break;
+            }
+            temp = getNewCoord(RIGHT, temp);
+            nextWhole = next(temp, RIGHT);
+        }
+
+        // DOWN
+        temp = user;
+        nextWhole = next(temp, DOWN);
+        while(nextWhole.y <= 20) {
+            block = map.block(nextWhole);
+            if(block == Pacman.WALL) {
+                x[2] = Math.abs((user.y/10) - nextWhole.y) / max_y;
+                break;
+            }
+            temp = getNewCoord(DOWN, temp);
+            nextWhole = next(temp, DOWN);
+        }
+
+        // LEFT
+        temp = user;
+        nextWhole = next(temp, LEFT);
+        while(nextWhole.x > 0) {
+            block = map.block(nextWhole);
+            if(block == Pacman.WALL) {
                 x[3] = Math.abs((user.x/10) - nextWhole.x) / max_x;
                 break;
             }
