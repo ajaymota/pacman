@@ -957,11 +957,10 @@ var PACMAN = (function () {
             }
         }
 
-        console.log(getGhostsDis(userPos, ghostPos));
-        socket.emit('client msg', {data: getGhostsDis(userPos, ghostPos)});
-
-        console.log(getGhostsDir(userPos, ghostPos));
-        console.log([userPos.x, userPos.y]);
+        socket.emit('getGhostsDis', {data: getGhostsDis(userPos, ghostPos)});
+        socket.emit('getGhostsDir', {data: getGhostsDir(userPos, ghostPos)});
+        socket.emit('getNearestBiscuit', {data: getNearestBiscuit(userPos)});
+        socket.emit('getGhostsStatus', {data: getGhostsStatus(ghosts)});
     };
 
     function mainLoop() {
@@ -1100,6 +1099,16 @@ var PACMAN = (function () {
         timer = window.setInterval(mainLoop, 1000 / Pacman.FPS);
     };
 
+    function getGhostsStatus(ghosts) {
+        x = [0, 0, 0, 0];
+        for (i = 0, len = ghosts.length; i < len; i += 1) {
+            if(ghosts[i].isVunerable) {
+                x[i] = 1;
+            }
+        }
+        return x;
+    };
+
     function getGhostsDis(user, ghosts) {
         x = [0, 0, 0, 0];
         for (i = 0, len = ghosts.length; i < len; i += 1) {
@@ -1138,6 +1147,99 @@ var PACMAN = (function () {
                 }
             }
         }
+        return x;
+    };
+
+    function getNearestBiscuit(user) {
+        // UP = x[0];
+        // RIGHT = x[1];
+        // DOWN = x[2];
+        // LEFT = x[3];
+        x = [1, 1, 1, 1];
+        max_x = 17;
+        max_y = 20;
+
+        function getNewCoord(dir, current) {
+            return {
+                "x": current.x + (dir === LEFT && -2 || dir === RIGHT && 2 || 0),
+                "y": current.y + (dir === DOWN && 2 || dir === UP    && -2 || 0)
+            };
+        };
+
+        function pointToCoord(x) {
+            return Math.round(x/10);
+        };
+
+        function nextSquare(x, dir) {
+            var rem = x % 10;
+            if (rem === 0) {
+                return x;
+            } else if (dir === RIGHT || dir === DOWN) {
+                return x + (10 - rem);
+            } else {
+                return x - rem;
+            }
+        };
+
+        function next(pos, dir) {
+            return {
+                "y" : pointToCoord(nextSquare(pos.y, dir)),
+                "x" : pointToCoord(nextSquare(pos.x, dir)),
+            };
+        };
+
+        // UP
+        temp = user;
+        nextWhole = next(temp, UP);
+        while(nextWhole.y > 0) {
+            block = map.block(nextWhole);
+            if(block == Pacman.BISCUIT) {
+                x[0] = Math.abs((user.y/10) - nextWhole.y) / max_y;
+                break;
+            }
+            temp = getNewCoord(UP, temp);
+            nextWhole = next(temp, UP);
+        }
+
+        // RIGHT
+        temp = user;
+        nextWhole = next(temp, RIGHT);
+        while(nextWhole.x <= 17) {
+            block = map.block(nextWhole);
+            if(block == Pacman.BISCUIT) {
+                x[1] = Math.abs((user.x/10) - nextWhole.x) / max_x;
+                break;
+            }
+            temp = getNewCoord(RIGHT, temp);
+            nextWhole = next(temp, RIGHT);
+        }
+
+        // DOWN
+        temp = user;
+        nextWhole = next(temp, DOWN);
+        while(nextWhole.y <= 20) {
+            block = map.block(nextWhole);
+            if(block == Pacman.BISCUIT) {
+                x[2] = Math.abs((user.y/10) - nextWhole.y) / max_y;
+                break;
+            }
+            temp = getNewCoord(DOWN, temp);
+            nextWhole = next(temp, DOWN);
+        }
+
+        // LEFT
+        temp = user;
+        nextWhole = next(temp, LEFT);
+        while(nextWhole.x > 0) {
+            block = map.block(nextWhole);
+            if(block == Pacman.BISCUIT) {
+                x[3] = Math.abs((user.x/10) - nextWhole.x) / max_x;
+                break;
+            }
+            temp = getNewCoord(LEFT, temp);
+            nextWhole = next(temp, LEFT);
+        }
+
         return x;
     };
 
