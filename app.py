@@ -1,11 +1,17 @@
 #!flask/bin/python
 
-from flask import Flask, request, render_template, session, json, abort, jsonify
+from flask import Flask, request, render_template
 from flask_socketio import SocketIO, emit
 from itertools import chain
+import main
+import pickle
+import numpy as np
 
 app = Flask(__name__)
-socketio = SocketIO(app)
+socketio = SocketIO(app, logging=False)
+
+global generation
+generation = 1
 
 
 @app.route('/hello')
@@ -28,13 +34,34 @@ def test_connect():
 
 @socketio.on('client msg', namespace='/test')
 def test_message(message):
-    features = extract_features(message['data'])
-    send_dir()
+    games = message['data'][0]
+    features = extract_features(message['data'][1])
+    direction = main.interpret_output(main.use_model(features, (games+1)))
+    send_dir(direction)
+
+
+@socketio.on('games msg', namespace='/test')
+def controller(message):
+    games = message['data'][0]
+    score = message['data'][1]
+    global generation
+
+    # print([games, score, generation])
+    main.save_score((games-1), score)
+
+    if games == 20:
+        generation += 1
+        with open("generation.db", "wb") as f:
+            pickle.dump(generation, f)
+
+        parents = main.get_fittest_parents()
+        child = main.cross_over(parents[0], parents[1])
+        main.rebreed_ten_models(child)
 
 
 @socketio.on('my event', namespace='/test')
-def send_dir():
-    emit('server msg', {'data': 0.67})
+def send_dir(direction):
+    emit('server msg', {'data': direction})
 
 
 @socketio.on('disconnect', namespace='/test')
@@ -59,6 +86,7 @@ def extract_features(data):
     :param data:
     :return:
     """
+    data = np.array(data).T
     data = list(chain.from_iterable(data))
     return data
 

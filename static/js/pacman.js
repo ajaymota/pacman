@@ -289,6 +289,7 @@ Pacman.User = function (game, map) {
         due       = null, 
         lives     = null,
         score     = 5,
+        wallie    = 0,
         keyMap    = {};
     
     keyMap[KEY.ARROW_LEFT]  = LEFT;
@@ -317,7 +318,7 @@ Pacman.User = function (game, map) {
 
     function initUser() {
         score = 0;
-        lives = 3;
+        lives = 0;
         newLevel();
     }
     
@@ -415,6 +416,7 @@ Pacman.User = function (game, map) {
         }
         
         if (onGridSquare(position) && map.isWallSpace(next(npos, direction))) {
+            wallie = direction;
             direction = NONE;
         }
 
@@ -515,7 +517,12 @@ Pacman.User = function (game, map) {
         
         ctx.fill();    
     };
-    
+
+    function getWallie()
+    {
+        return wallie;
+    }
+
     initUser();
 
     return {
@@ -530,6 +537,8 @@ Pacman.User = function (game, map) {
         "move"          : move,
         "newLevel"      : newLevel,
         "reset"         : reset,
+        "wallie"        : wallie,
+        "getWallie"     : getWallie,
         "resetPosition" : resetPosition
     };
 };
@@ -792,6 +801,9 @@ var PACMAN = (function () {
         timer        = null,
         map          = null,
         user         = null,
+        games        = 0,
+        gen          = 1,
+        plays        = [1, 1, 1, 1],
         stored       = null;
 
     function getTick() { 
@@ -853,7 +865,9 @@ var PACMAN = (function () {
             audio.pause();
             map.draw(ctx);
             dialog("Paused");
-        } else if (state !== PAUSE) {   
+        } else if (e.keyCode === KEY.K) {
+            setState(DYING);
+        } else if (state !== PAUSE) {
             return user.keyDown(e);
         }
         return true;
@@ -862,6 +876,16 @@ var PACMAN = (function () {
     function loseLife() {        
         setState(WAITING);
         user.loseLife();
+
+        games += 1;
+        socket.emit('games msg', {data: [games, user.theScore()]});
+
+        if(games == 20) {
+            games = 0;
+            gen += 1
+            location.reload(true);
+        }
+
         if (user.getLives() > 0) {
             startLevel();
         }
@@ -906,8 +930,8 @@ var PACMAN = (function () {
 
         ctx.fillStyle = "#FFFF00";
         ctx.font      = "14px BDCartoonShoutRegular";
-        ctx.fillText("Score: " + user.theScore(), 30, textBase);
-        ctx.fillText("Level: " + level, 260, textBase);
+        ctx.fillText("Score: " + user.theScore() + " G: " + gen, 30, textBase);
+        ctx.fillText("Game: " + games, 260, textBase);
     }
 
     function redrawBlock(pos) {
@@ -957,29 +981,31 @@ var PACMAN = (function () {
             }
         }
 
-        socket.emit('client msg', {data: [getGhostsDis(userPos, ghostPos),
-                                          getGhostsDir(userPos, ghostPos),
-                                          getGhostsStatus(ghosts),
-                                          getNearestBiscuit(userPos),
-                                          getNearestWall(userPos),
-                                          [userPos.x/170, userPos.y/200] ]});
+        socket.emit('client msg', {data:  [games,[getGhostsDirDis(userPos, ghostPos),
+                                                  getNearestBiscuit(userPos),
+                                                  getNearestWall(userPos),
+                                                  plays ]]});
 
         result = 0;
         socket.on('server msg', function(msg) {
             result = msg.data;
+            if(result == 0) {
+                keyDown(new KeyboardEvent('keypress',{'keyCode':38}));
+                plays = [0, 1, 1, 1];
+            }
+            else if(result == 0.33) {
+                keyDown(new KeyboardEvent('keypress',{'keyCode':39}));
+                plays = [1, 0, 1, 1];
+            }
+            else if(result == 0.67) {
+                keyDown(new KeyboardEvent('keypress',{'keyCode':40}));
+                plays = [1, 1, 0, 1];
+            }
+            else if(result == 1) {
+                keyDown(new KeyboardEvent('keypress',{'keyCode':37}));
+                plays = [1, 1, 1, 0];
+            }
         });
-        if(result == 0) {
-            keyDown(new KeyboardEvent('keypress',{'keyCode':38}));
-        }
-        else if(result == 0.33) {
-            keyDown(new KeyboardEvent('keypress',{'keyCode':39}));
-        }
-        else if(result == 0.67) {
-            keyDown(new KeyboardEvent('keypress',{'keyCode':40}));
-        }
-        else if(result == 1) {
-            keyDown(new KeyboardEvent('keypress',{'keyCode':37}));
-        }
     };
 
     function mainLoop() {
@@ -997,7 +1023,8 @@ var PACMAN = (function () {
         } else if (state === WAITING && stateChanged) {            
             stateChanged = false;
             map.draw(ctx);
-            dialog("Press N to start a New game");            
+            dialog("Press N to start a New game");
+            keyDown(new KeyboardEvent('keypress',{'keyCode':78}));
         } else if (state === EATEN_PAUSE && 
                    (tick - timerStart) > (Pacman.FPS / 3)) {
             map.draw(ctx);
@@ -1015,7 +1042,7 @@ var PACMAN = (function () {
             }
         } else if (state === COUNTDOWN) {
             
-            diff = 5 + Math.floor((timerStart - tick) / Pacman.FPS);
+            diff = 1 + Math.floor((timerStart - tick) / Pacman.FPS);
             
             if (diff === 0) {
                 map.draw(ctx);
@@ -1115,153 +1142,84 @@ var PACMAN = (function () {
         document.addEventListener("keydown", keyDown, true);
         document.addEventListener("keypress", keyPress, true);
 
+        keyDown(new KeyboardEvent('keypress',{'keyCode':78}));
+
         timer = window.setInterval(function () {
                                         mainLoop();
                                     }, 1000 / Pacman.FPS);
     };
 
-    function getGhostsStatus(ghosts) {
-        x = [0, 0, 0, 0];
-        for (i = 0, len = ghosts.length; i < len; i += 1) {
-            if(ghosts[i].isVunerable()) {
-                x[i] = 1;
-            }
-        }
-        return x;
-    };
-
-    function getGhostsDis(user, ghosts) {
-        x = [0, 0, 0, 0];
-        for (i = 0, len = ghosts.length; i < len; i += 1) {
-            x[i] = (Math.sqrt(Math.pow(ghosts[i]["new"].x - user.x, 2) + Math.pow(ghosts[i]["new"].y - user.y, 2)));
-            x[i] = x[i]/250;
-        }
-        return x;
-    };
-
-    function getGhostsDir(user, ghosts) {
-        // TOP = 0.0;
-        // RIGHT = 0.33;
-        // BOTTOM = 0.67;
-        // LEFT = 1.0;
-        x = [0, 0, 0, 0];
+    function getGhostsDirDis(user, ghosts) {
+        // UP = x[0];
+        // RIGHT = x[1];
+        // DOWN = x[2];
+        // LEFT = x[3];
+        x = [0.6, 0.6, 0.6, 0.6];
+        var temp = -1;
         for (i = 0, len = ghosts.length; i < len; i += 1) {
             if(Math.abs(ghosts[i]["new"].x - user.x) >= Math.abs(ghosts[i]["new"].y - user.y))
             {
                 if(ghosts[i]["new"].x - user.x >= 0)
                 {
-                    x[i] = 0.33;
+                    temp = (Math.sqrt(Math.pow(ghosts[i]["new"].x - user.x, 2) + Math.pow(ghosts[i]["new"].y - user.y, 2)));
+                    temp = temp/250;
+                    if(x[1] > temp)
+                    {
+                        x[1] = temp;
+                        temp = -1;
+                    }
+                    if(user.x == 170)
+                    {
+                        x[1] = 0;
+                    }
                 }
                 else
                 {
-                    x[i] = 1.0;
+                    temp = (Math.sqrt(Math.pow(ghosts[i]["new"].x - user.x, 2) + Math.pow(ghosts[i]["new"].y - user.y, 2)));
+                    temp = temp/250;
+                    if(x[3] > temp)
+                    {
+                        x[3] = temp;
+                        temp = -1;
+                    }
+                    if(user.x == 10)
+                    {
+                        x[3] = 0;
+                    }
                 }
             }
             else if(Math.abs(ghosts[i]["new"].x - user.x) <= Math.abs(ghosts[i]["new"].y - user.y))
             {
                 if(ghosts[i]["new"].y - user.y < 0)
                 {
-                    x[i] = 0.0;
+                    temp = (Math.sqrt(Math.pow(ghosts[i]["new"].x - user.x, 2) + Math.pow(ghosts[i]["new"].y - user.y, 2)));
+                    temp = temp/250;
+                    if(x[0] > temp)
+                    {
+                        x[0] = temp;
+                        temp = -1;
+                    }
+                    if(user.y == 10)
+                    {
+                        x[0] = 0;
+                    }
                 }
                 else
                 {
-                    x[i] = 0.67;
+                    temp = (Math.sqrt(Math.pow(ghosts[i]["new"].x - user.x, 2) + Math.pow(ghosts[i]["new"].y - user.y, 2)));
+                    temp = temp/250;
+                    if(x[2] > temp)
+                    {
+                        x[2] = temp;
+                        temp = -1;
+                    }
+                    if(user.y == 200)
+                    {
+                        x[2] = 0;
+                    }
                 }
             }
         }
-        return x;
-    };
-
-    function getNearestWall(user) {
-        // UP = x[0];
-        // RIGHT = x[1];
-        // DOWN = x[2];
-        // LEFT = x[3];
-        x = [1, 1, 1, 1];
-        max_x = 17;
-        max_y = 20;
-
-        function getNewCoord(dir, current) {
-            return {
-                "x": current.x + (dir === LEFT && -2 || dir === RIGHT && 2 || 0),
-                "y": current.y + (dir === DOWN && 2 || dir === UP    && -2 || 0)
-            };
-        };
-
-        function pointToCoord(x) {
-            return Math.round(x/10);
-        };
-
-        function nextSquare(x, dir) {
-            var rem = x % 10;
-            if (rem === 0) {
-                return x;
-            } else if (dir === RIGHT || dir === DOWN) {
-                return x + (10 - rem);
-            } else {
-                return x - rem;
-            }
-        };
-
-        function next(pos, dir) {
-            return {
-                "y" : pointToCoord(nextSquare(pos.y, dir)),
-                "x" : pointToCoord(nextSquare(pos.x, dir)),
-            };
-        };
-
-        // UP
-        temp = user;
-        nextWhole = next(temp, UP);
-        while(nextWhole.y > 0) {
-            block = map.block(nextWhole);
-            if(block == Pacman.BISCUIT) {
-                x[0] = Math.abs((user.y/10) - nextWhole.y) / max_y;
-                break;
-            }
-            temp = getNewCoord(UP, temp);
-            nextWhole = next(temp, UP);
-        }
-
-        // RIGHT
-        temp = user;
-        nextWhole = next(temp, RIGHT);
-        while(nextWhole.x <= 17) {
-            block = map.block(nextWhole);
-            if(block == Pacman.BISCUIT) {
-                x[1] = Math.abs((user.x/10) - nextWhole.x) / max_x;
-                break;
-            }
-            temp = getNewCoord(RIGHT, temp);
-            nextWhole = next(temp, RIGHT);
-        }
-
-        // DOWN
-        temp = user;
-        nextWhole = next(temp, DOWN);
-        while(nextWhole.y <= 20) {
-            block = map.block(nextWhole);
-            if(block == Pacman.BISCUIT) {
-                x[2] = Math.abs((user.y/10) - nextWhole.y) / max_y;
-                break;
-            }
-            temp = getNewCoord(DOWN, temp);
-            nextWhole = next(temp, DOWN);
-        }
-
-        // LEFT
-        temp = user;
-        nextWhole = next(temp, LEFT);
-        while(nextWhole.x > 0) {
-            block = map.block(nextWhole);
-            if(block == Pacman.BISCUIT) {
-                x[3] = Math.abs((user.x/10) - nextWhole.x) / max_x;
-                break;
-            }
-            temp = getNewCoord(LEFT, temp);
-            nextWhole = next(temp, LEFT);
-        }
-
         return x;
     };
 
@@ -1270,7 +1228,7 @@ var PACMAN = (function () {
         // RIGHT = x[1];
         // DOWN = x[2];
         // LEFT = x[3];
-        x = [1, 1, 1, 1];
+        x = [0, 0, 0, 0];
         max_x = 17;
         max_y = 20;
 
@@ -1308,8 +1266,8 @@ var PACMAN = (function () {
         nextWhole = next(temp, UP);
         while(nextWhole.y > 0) {
             block = map.block(nextWhole);
-            if(block == Pacman.WALL) {
-                x[0] = Math.abs((user.y/10) - nextWhole.y) / max_y;
+            if(block == Pacman.BISCUIT) {
+                x[0] = 1 - Math.abs((user.y/10) - nextWhole.y) / max_y;
                 break;
             }
             temp = getNewCoord(UP, temp);
@@ -1321,8 +1279,8 @@ var PACMAN = (function () {
         nextWhole = next(temp, RIGHT);
         while(nextWhole.x <= 17) {
             block = map.block(nextWhole);
-            if(block == Pacman.WALL) {
-                x[1] = Math.abs((user.x/10) - nextWhole.x) / max_x;
+            if(block == Pacman.BISCUIT) {
+                x[1] = 1 - Math.abs((user.x/10) - nextWhole.x) / max_x;
                 break;
             }
             temp = getNewCoord(RIGHT, temp);
@@ -1334,8 +1292,8 @@ var PACMAN = (function () {
         nextWhole = next(temp, DOWN);
         while(nextWhole.y <= 20) {
             block = map.block(nextWhole);
-            if(block == Pacman.WALL) {
-                x[2] = Math.abs((user.y/10) - nextWhole.y) / max_y;
+            if(block == Pacman.BISCUIT) {
+                x[2] = 1 - Math.abs((user.y/10) - nextWhole.y) / max_y;
                 break;
             }
             temp = getNewCoord(DOWN, temp);
@@ -1347,12 +1305,109 @@ var PACMAN = (function () {
         nextWhole = next(temp, LEFT);
         while(nextWhole.x > 0) {
             block = map.block(nextWhole);
-            if(block == Pacman.WALL) {
-                x[3] = Math.abs((user.x/10) - nextWhole.x) / max_x;
+            if(block == Pacman.BISCUIT) {
+                x[3] = 1 - Math.abs((user.x/10) - nextWhole.x) / max_x;
                 break;
             }
             temp = getNewCoord(LEFT, temp);
             nextWhole = next(temp, LEFT);
+        }
+
+        return x;
+    };
+
+    function getNearestWall_bak(user) {
+        x = [1, 1, 1, 1];
+
+        if(user.getWallie() == UP)
+        {
+            x[0] = 0;
+        }
+        if(user.getWallie() == RIGHT)
+        {
+            x[1] = 0;
+        }
+        if(user.getWallie() == DOWN)
+        {
+            x[2] = 0;
+        }
+        if(user.getWallie() == LEFT)
+        {
+            x[3] = 0;
+        }
+
+        return x;
+    }
+
+
+    function getNearestWall(user) {
+        // UP = x[0];
+        // RIGHT = x[1];
+        // DOWN = x[2];
+        // LEFT = x[3];
+        x = [1, 1, 1, 1];
+        max_x = 18;
+        max_y = 21;
+
+        function getNewCoord(dir, current) {
+            return {
+                "x": current.x + (dir === LEFT && -2 || dir === RIGHT && 2 || 0),
+                "y": current.y + (dir === DOWN && 2 || dir === UP    && -2 || 0)
+            };
+        };
+
+        function pointToCoord(x) {
+            return Math.round(x/10);
+        };
+
+        function nextSquare(x, dir) {
+            var rem = x % 10;
+            if (rem === 0) {
+                return x;
+            } else if (dir === RIGHT || dir === DOWN) {
+                return x + (10 - rem);
+            } else {
+                return x - rem;
+            }
+        };
+
+        function next(pos, dir) {
+            return {
+                "y" : pointToCoord(nextSquare(pos.y, dir)),
+                "x" : pointToCoord(nextSquare(pos.x, dir)),
+            };
+        };
+
+        // UP
+        temp = getNewCoord(UP, user);
+        nextWhole = next(temp, UP);
+        block = map.block(nextWhole);
+        if(block == Pacman.WALL) {
+            x[0] = 0;
+        }
+
+        // RIGHT
+        temp = getNewCoord(RIGHT, user);
+        nextWhole = next(temp, RIGHT);
+        block = map.block(nextWhole);
+        if(block == Pacman.WALL) {
+            x[1] = 0;
+        }
+
+        // DOWN
+        temp = getNewCoord(DOWN, user);
+        nextWhole = next(temp, DOWN);
+        block = map.block(nextWhole);
+        if(block == Pacman.WALL) {
+            x[2] = 0;
+        }
+
+        // LEFT
+        temp = getNewCoord(LEFT, user);
+        nextWhole = next(temp, LEFT);
+        block = map.block(nextWhole);
+        if(block == Pacman.WALL) {
+            x[3] = 0;
         }
 
         return x;
@@ -1400,17 +1455,17 @@ Pacman.MAP = [
 	[0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
 	[0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0],
 	[0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0],
-	[0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0],
-	[2, 2, 2, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 2, 2, 2],
-	[0, 0, 0, 0, 1, 0, 1, 0, 0, 3, 0, 0, 1, 0, 1, 0, 0, 0, 0],
+	[0, 2, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 2, 0],
+	[0, 2, 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 0, 2, 0],
+	[0, 2, 0, 0, 1, 0, 1, 0, 0, 3, 0, 0, 1, 0, 1, 0, 0, 2, 0],
 	[2, 2, 2, 2, 1, 1, 1, 0, 3, 3, 3, 0, 1, 1, 1, 2, 2, 2, 2],
-	[0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0],
-	[2, 2, 2, 0, 1, 0, 1, 1, 1, 2, 1, 1, 1, 0, 1, 0, 2, 2, 2],
-	[0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0],
+	[0, 2, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 2, 0],
+	[0, 2, 0, 0, 1, 0, 1, 1, 1, 2, 1, 1, 1, 0, 1, 0, 0, 2, 0],
+	[0, 2, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 2, 0],
 	[0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
 	[0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0],
 	[0, 4, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 4, 0],
-	[0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0],
+	[0, 2, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 2, 1, 2, 0],
 	[0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0],
 	[0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0],
 	[0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],

@@ -1,0 +1,12 @@
+Current Featureset:
+1-4. 	Ghost n Distance (0 = bad, 1 = good)
+5-8. 	Ghost 1 to 4 Direction (0 = top, 0.33 = right, 0.67 = bottom, 1 = left)
+9-12.	Ghost 1 to 4 Status (0 = bad[dangerous], 1 = good[vulnerable])
+13.		Nearest Biscuit Distance TOP (0 = bad, 1 = good)
+14.		Nearest Biscuit Distance RIGHT (0 = bad, 1 = good)
+15.		Nearest Biscuit Distance BOTTOM (0 = bad, 1 = good)
+16.		Nearest Biscuit Distance LEFT (0 = bad, 1 = good)
+17.		Nearest WALL Distance TOP (0 = bad, 1 = good)
+18.		Nearest WALL Distance RIGHT (0 = bad, 1 = good)
+19.		Nearest WALL Distance BOTTOM (0 = bad, 1 = good)
+20.		Nearest WALL Distance LEFT (0 = bad, 1 = good)
