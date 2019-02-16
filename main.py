@@ -58,7 +58,7 @@ def feed_forward_network(features, model_index):
     model[3] = np.array(model[3])
     features = np.array([features])
 
-    for runs in range(20):
+    for runs in range(100):
         l0 = features
         l1 = nonlin(np.dot(l0, model[0]))
         l2 = nonlin(np.dot(l1, model[1]))

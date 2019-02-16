@@ -1,12 +1,94 @@
 Current Featureset:
-1-4. 	Ghost n Distance (0 = bad, 1 = good)
-5-8. 	Ghost 1 to 4 Direction (0 = top, 0.33 = right, 0.67 = bottom, 1 = left)
-9-12.	Ghost 1 to 4 Status (0 = bad[dangerous], 1 = good[vulnerable])
-13.		Nearest Biscuit Distance TOP (0 = bad, 1 = good)
-14.		Nearest Biscuit Distance RIGHT (0 = bad, 1 = good)
-15.		Nearest Biscuit Distance BOTTOM (0 = bad, 1 = good)
-16.		Nearest Biscuit Distance LEFT (0 = bad, 1 = good)
-17.		Nearest WALL Distance TOP (0 = bad, 1 = good)
-18.		Nearest WALL Distance RIGHT (0 = bad, 1 = good)
-19.		Nearest WALL Distance BOTTOM (0 = bad, 1 = good)
-20.		Nearest WALL Distance LEFT (0 = bad, 1 = good)
+1.		Nearest Ghost Distance TOP (0 = bad, 1 = good)
+2.		Nearest Ghost Distance RIGHT (0 = bad, 1 = good)
+3.		Nearest Ghost Distance BOTTOM (0 = bad, 1 = good)
+4.		Nearest Ghost Distance LEFT (0 = bad, 1 = good)
+5.		Nearest Biscuit Distance TOP (0 = bad, 1 = good)
+6.		Nearest Biscuit Distance RIGHT (0 = bad, 1 = good)
+7.		Nearest Biscuit Distance BOTTOM (0 = bad, 1 = good)
+8.		Nearest Biscuit Distance LEFT (0 = bad, 1 = good)
+9.		Nearest WALL Distance TOP (0 = bad, 1 = good)
+10.		Nearest WALL Distance RIGHT (0 = bad, 1 = good)
+11.		Nearest WALL Distance BOTTOM (0 = bad, 1 = good)
+12.		Nearest WALL Distance LEFT (0 = bad, 1 = good)
+
+
+Other conditions:-
+1. Left ghost 1 present
+2. Left ghost status
+3. Left ghost distance
+
+New Featureset Idea:-
+..I..
+..I..
+IIOII
+..I..
+..I..
+
+Each I block represents an information block, it can have the following categories:-
+1. Is invalid block
+2. has Biscuit
+3. has Pill
+4. has Ghost
+5. has Wall
+6. has Nothing (is empty)
+
+Sorted by (+ve) priority:-
+1. has Pill
+2. has Biscuit
+3. has Nothing (is empty)
+4. has Wall
+5. has Ghost
+6. Is invalid block
+
+Visualization:-
+..U..
+..u..
+LlOrR
+..d..
+..D..
+
+Reward function(?):-
+The reward function needs to teach pacman good moves, so that it knows what to calculate:-
+1. Previous move score difference earned
+2. Distance from ghost in direction chosen
+3. Distance from ghost in opposite direction
+4. Distance from previous position
+
+Other Features:-
+1. 	Distance from ghost 1
+2. 	Distance from ghost 2
+3. 	Distance from ghost 3
+4. 	Distance from ghost 4
+5. 	Ghost 1 UP
+6. 	Ghost 2 UP
+7. 	Ghost 3 UP
+8. 	Ghost 4 UP
+9. 	Ghost 1 RIGHT
+10. Ghost 2 RIGHT
+11. Ghost 3 RIGHT
+12. Ghost 4 RIGHT
+13. Ghost 1 DOWN
+14. Ghost 2 DOWN
+15. Ghost 3 DOWN
+16. Ghost 4 DOWN
+17. Ghost 1 LEFT
+18. Ghost 2 LEFT
+19. Ghost 3 LEFT
+20. Ghost 4 LEFT
+
+NOTE: Give pacman full + vision of all elements in all directions 
+STEPS:-
+1. Init all arrays with 0's of size 20 vertically (UP and DOWN)
+2. Init all arrays with 0's of size 17 horizontally (LEFT and RIGHT) 
+
+
+
+
+
+
+
+
+
+
+
