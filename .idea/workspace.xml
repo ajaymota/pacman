@@ -11,11 +11,11 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="app.py" pinned="false" current-in-tab="true">
+      <file leaf-file-name="app.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/app.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="276">
-              <caret line="88" column="27" selection-start-line="88" selection-start-column="27" selection-end-line="88" selection-end-column="27" />
+            <state relative-caret-position="391">
+              <caret line="59" lean-forward="true" selection-start-line="59" selection-end-line="59" />
               <folding>
                 <element signature="e#20#69#0" expanded="true" />
               </folding>
@@ -23,11 +23,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="main.py" pinned="false" current-in-tab="false">
+      <file leaf-file-name="main.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/main.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1126">
-              <caret line="73" column="48" selection-start-line="73" selection-start-column="48" selection-end-line="73" selection-end-column="48" />
+            <state relative-caret-position="205">
+              <caret line="90" lean-forward="true" selection-start-line="90" selection-end-line="90" />
               <folding>
                 <element signature="e#121#139#0" expanded="true" />
               </folding>
@@ -38,8 +38,8 @@
       <file leaf-file-name="pacman.js" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/static/js/pacman.js">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="418">
-              <caret line="1470" column="33" selection-start-line="1470" selection-start-column="32" selection-end-line="1470" selection-end-column="33" />
+            <state relative-caret-position="391">
+              <caret line="897" lean-forward="true" selection-start-line="897" selection-end-line="897" />
             </state>
           </provider>
         </entry>
@@ -64,9 +64,6 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>conso</find>
-      <find>level</find>
-      <find>gen</find>
       <find>prin</find>
       <find>setState(DYING);</find>
       <find>WALL</find>
@@ -79,7 +76,7 @@
       <find>print</find>
       <find>plays</find>
       <find>emit</find>
-      <find>direction = NONE</find>
+      <find />
       <find>nextSquare</find>
       <find>nearestwa</find>
       <find>onGridSquare(</find>
@@ -94,6 +91,9 @@
       <find>wall</find>
       <find>port</find>
       <find>pane</find>
+      <find>getgho</find>
+      <find>console</find>
+      <find>gen</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -114,7 +114,7 @@
       </list>
     </option>
   </component>
-  <component name="ProjectFrameBounds" extendedState="6">
+  <component name="ProjectFrameBounds" extendedState="7">
     <option name="x" value="20" />
     <option name="y" value="40" />
     <option name="width" value="2520" />
@@ -541,29 +541,29 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/app.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="391">
+          <caret line="59" lean-forward="true" selection-start-line="59" selection-end-line="59" />
+          <folding>
+            <element signature="e#20#69#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/static/js/pacman.js">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="418">
-          <caret line="1470" column="33" selection-start-line="1470" selection-start-column="32" selection-end-line="1470" selection-end-column="33" />
+        <state relative-caret-position="391">
+          <caret line="897" lean-forward="true" selection-start-line="897" selection-end-line="897" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/main.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1126">
-          <caret line="73" column="48" selection-start-line="73" selection-start-column="48" selection-end-line="73" selection-end-column="48" />
+        <state relative-caret-position="205">
+          <caret line="90" lean-forward="true" selection-start-line="90" selection-end-line="90" />
           <folding>
             <element signature="e#121#139#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/app.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="276">
-          <caret line="88" column="27" selection-start-line="88" selection-start-column="27" selection-end-line="88" selection-end-column="27" />
-          <folding>
-            <element signature="e#20#69#0" expanded="true" />
           </folding>
         </state>
       </provider>

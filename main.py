@@ -9,7 +9,7 @@ import numpy as np
 import pickle
 import os
 import random
-# import math
+from itertools import chain
 
 
 def nonlin(x, deriv=False):
@@ -37,14 +37,17 @@ def interpret_output(layer5):
 
 def build_rand_network():
     # randomly initialize our weights with mean 0
-    syn0 = 2 * np.random.random((16, 12)) - 1
-    syn1 = 2 * np.random.random((12, 8)) - 1
-    syn2 = 2 * np.random.random((8, 4)) - 1
-    syn3 = 2 * np.random.random((4, 4)) - 1
+    syn0 = 2 * np.random.random((98, 50)) - 1
+    syn1 = 2 * np.random.random((50, 25)) - 1
+    syn2 = 2 * np.random.random((25, 12)) - 1
+    syn3 = 2 * np.random.random((12, 4)) - 1
     return [syn0, syn1, syn2, syn3]
 
 
 def feed_forward_network(features, model_index):
+
+    temp = features
+    features = list(chain.from_iterable(features))
 
     model = []
     db_name = "model" + str(model_index) + ".db"
@@ -58,7 +61,7 @@ def feed_forward_network(features, model_index):
     model[3] = np.array(model[3])
     features = np.array([features])
 
-    for runs in range(100):
+    for runs in range(10):
         l0 = features
         l1 = nonlin(np.dot(l0, model[0]))
         l2 = nonlin(np.dot(l1, model[1]))
@@ -73,18 +76,18 @@ def feed_forward_network(features, model_index):
         # print(features)
         # print('//////////////////////////////////////////////////////////')
 
-        y = l4
+        y = [[0, 0, 0, 0]]
 
         # Result = (For-all directions) Ghost * Biscuit * Wall * Move
         dir_max = np.argmax(y[0])
         if dir_max == 0 or True:
-            y[0][0] = (6*features[0][0] + features[0][1] + 5.5*features[0][2] + 0.5*features[0][3]) / 13
+            y[0][0] = (((5*temp[1][0]) + (2*temp[1][1]) + temp[1][2]) / 8)
         if dir_max == 1 or True:
-            y[0][1] = (6*features[0][4] + features[0][5] + 5.5*features[0][6] + 0.5*features[0][7]) / 13
+            y[0][1] = (((5*temp[3][0]) + (2*temp[3][1]) + temp[3][2]) / 8)
         if dir_max == 2 or True:
-            y[0][2] = (6*features[0][8] + features[0][9] + 5.5*features[0][10] + 0.5*features[0][11]) / 13
+            y[0][2] = (((5*temp[6][0]) + (2*temp[6][1]) + temp[6][2]) / 8)
         if dir_max == 3 or True:
-            y[0][3] = (6*features[0][12] + features[0][13] + 5.5*features[0][14] + 0.5*features[0][15]) / 13
+            y[0][3] = (((5*temp[8][0]) + (2*temp[8][1]) + temp[8][2]) / 8)
 
         l4_error = y - l4
 
@@ -130,7 +133,7 @@ def feed_forward_network(features, model_index):
 def breed_ten_models():
     np.random.seed(1)
 
-    for i in range(1, 21):
+    for i in range(1, 11):
         model = build_rand_network()
         db_name = "model"+str(i)+".db"
         with open(db_name, "wb") as f:
@@ -163,7 +166,7 @@ def save_score(model_index, score):
 
 
 def init_scores():
-    scores = [0 for x in range(20)]
+    scores = [0 for x in range(10)]
 
     with open("scores.db", "wb") as f:
         pickle.dump(scores, f)
@@ -200,7 +203,7 @@ def cross_over(p1_index, p2_index):
     for xi in range(len(p1_model)):
         for yi in range(len(p1_model[xi])):
             for zi in range(len(p1_model[xi][yi])):
-                if random.uniform(0, 1) > 0.75:
+                if random.uniform(0, 1) > 0.85:
                     child_model[xi][yi][zi] = p2_model[xi][yi][zi]
 
     return child_model
@@ -210,15 +213,15 @@ def mutate_model(model):
     for xi in range(len(model)):
         for yi in range(len(model[xi])):
             for zi in range(len(model[xi][yi])):
-                if random.uniform(0, 1) > 0.75:
-                    change = random.uniform(-0.5, 0.5)
+                if random.uniform(0, 1) > 0.85:
+                    change = random.uniform(-0.25, 0.25)
                     model[xi][yi][zi] += change
     return model
 
 
 def rebreed_ten_models(model):
 
-    for i in range(1, 21):
+    for i in range(1, 11):
         model = mutate_model(model)
         db_name = "model"+str(i)+".db"
         with open(db_name, "wb") as f:

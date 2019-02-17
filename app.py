@@ -2,7 +2,6 @@
 
 from flask import Flask, request, render_template
 from flask_socketio import SocketIO, emit
-from itertools import chain
 import main
 import pickle
 import numpy as np
@@ -49,7 +48,7 @@ def controller(message):
     # print([games, score, generation])
     main.save_score((games-1), score)
 
-    if games == 20:
+    if games == 10:
         generation += 1
         with open("generation.db", "wb") as f:
             pickle.dump(generation, f)
@@ -86,8 +85,6 @@ def extract_features(data):
     :param data:
     :return:
     """
-    data = np.array(data).T
-    data = list(chain.from_iterable(data))
     return data
 
 
